@@ -45,83 +45,53 @@ def main():
 
     # Commands
     @bot.command()
-    async def menu(ctx):
-        """Display the numbered command list"""
-        command_list = [
-            "[1] - Ban all members",
-            "[2] - Delete Channels",
-            "[3] - Delete Roles",
-            "[4] - Kick Members",
-            "[5] - Prune Members",
-            "[6] - Create Channels",
-            "[7] - Spam All Channels",
-            "[8] - Create Roles",
-            "[9] - Delete Roles",
-            "[10] - Rename Channels",
-            "[11] - Rename Guild",
-            "[12] - Rename Roles",
-            "[13] - Credits",
-            "[14] - Exit"
-        ]
-        menu_message = await ctx.send("\n".join(command_list))
-
-        # Wait for user input (number selection)
-        def check(m):
-            return m.author == ctx.author and m.content.isdigit() and int(m.content) in range(1, 15)
-
+    async def ban(ctx, member: discord.Member):
         try:
-            response = await bot.wait_for('message', check=check, timeout=30.0)
-            number = int(response.content)
-            await select_command(ctx, number)
-        except discord.TimeoutError:
-            await ctx.send("You took too long to respond! Please try again.")
-        except Exception as e:
-            await ctx.send(f"An error occurred: {str(e)}")
-
-    @bot.command()
-    async def select_command(ctx, number: int):
-        """Execute the selected command based on number"""
-        if number == 1:
-            await ban_all(ctx)
-        elif number == 2:
-            await delete_channels(ctx)
-        elif number == 3:
-            await delete_roles(ctx)
-        elif number == 4:
-            await kick_all(ctx)
-        elif number == 6:
-            await create_channel(ctx, "new-channel")  # Example: create a channel with a default name
-        elif number == 13:
-            await ctx.send("Bot developed by [Your Name Here].")
-        elif number == 14:
-            await ctx.send("Exiting...")  # Just a placeholder, no exit logic
-            await bot.close()
-        else:
-            await ctx.send("Invalid command number.")
-
-    async def ban_all(ctx):
-        """Ban all members in the server"""
-        try:
-            for member in ctx.guild.members:
-                if member != ctx.guild.owner:  # Avoid banning the owner
-                    await member.ban(reason="Banned by bot")
-                    print(f"Banned {member.name}")
-            await ctx.send("All members have been banned except the server owner.")
+            await member.ban()
+            await ctx.send(f'Banned {member.name}')
         except discord.Forbidden:
             await ctx.send("I don't have permission to ban members.")
         except discord.HTTPException:
-            await ctx.send("Failed to ban the members.")
+            await ctx.send("Failed to ban the member.")
 
-    async def delete_channels(ctx):
-        """Delete all channels in the server"""
+    @bot.command()
+    async def kick(ctx, member: discord.Member):
         try:
-            for channel in ctx.guild.channels:
-                await channel.delete()
-                print(f"Deleted channel {channel.name}")
-            await ctx.send("All channels have been deleted.")
+            await member.kick()
+            await ctx.send(f'Kicked {member.name}')
         except discord.Forbidden:
-            await ctx.send("I don't have permission to delete channels.")
+            await ctx.send("I don't have permission to kick members.")
         except discord.HTTPException:
-            await ctx.send("Failed to delete the channels.")
+            await ctx.send("Failed to kick the member.")
+    
+    @bot.command()
+    async def create_channel(ctx, name):
+        try:
+            guild = ctx.guild
+            await guild.create_text_channel(name)
+            await ctx.send(f'Created channel: {name}')
+        except discord.Forbidden:
+            await ctx.send("I don't have permission to create channels.")
+        except discord.HTTPException:
+            await ctx.send("Failed to create the channel.")
+    
+    @bot.command()
+    async def delete_roles(ctx):
+        try:
+            guild = ctx.guild
+            for role in guild.roles:
+                if role.name != "@everyone":
+                    await role.delete()
+            await ctx.send('Deleted all roles (except @everyone).')
+        except discord.Forbidden:
+            await ctx.send("I don't have permission to delete roles.")
+        except discord.HTTPException:
+            await ctx.send("Failed to delete the roles.")
 
-    async def delete_roles(ctx
+    # Add more commands as needed...
+
+    # Run the bot
+    bot.run(token)
+
+if __name__ == "__main__":
+    main()
